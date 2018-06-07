@@ -24,14 +24,14 @@ int main(int argc, char **argv)
    pthread_t snd_thread, rcv_thread;
    void* thread_result;
 
-   if(argc != 4){
-      printf("Usage : %s <ip> <port> <id>\n", argv[0]);
+   if(argc != 3){
+      printf("사용법 : %s <아이피> <포트>\n", argv[0]);
       exit(1);
    }
 
    sock = socket(PF_INET, SOCK_STREAM, 0);
    if(sock == -1)
-      error_handling("socket() error");
+      error_handling("socket() 에러");
 
    memset(&serv_addr, 0, sizeof(serv_addr));
    serv_addr.sin_family = AF_INET;
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
    serv_addr.sin_port=htons(atoi(argv[2]));
 
    if(connect(sock,(struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
-      error_handling("connect() error!");
+      error_handling("connect() 에러");
 
    pthread_create(&snd_thread, NULL, send_data, sock);
    pthread_create(&rcv_thread, NULL, recv_data, sock);
@@ -57,7 +57,7 @@ void* send_data(int sock)
    write(sock, "\n", 1);
    while(1){
      fgets(buf, BUFSIZE, stdin);
-     if(!strcmp(buf, "0\n")) {
+     if(!strcmp(buf, "0\n")) { // 0 입력 시 클라이언트 종료
         close(sock);
       exit(0);
      }
@@ -74,7 +74,7 @@ void* recv_data(int sock)
    {
       str_len = read(sock, data, BUFSIZE-1);
       if(str_len == -1) return (void*)1;
-      data[str_len]= '\0';
+      data[str_len]= '\0'; 
       fputs(data, stdout);
    }
 }
