@@ -17,15 +17,15 @@
 #define GUEST_STATE 0x0
 #define LOGIN_STATE 0x1
 
-// DB env
+// DB ENV
 #define DB_HOST "127.0.0.1"
 #define DB_USER "root"
 #define DB_PASS "root"
 #define DB_NAME "pbl"
 
 void* clnt_connection(void * arg);
-void send_message(char* message, int len);
-void send_text(char* message);
+void send_data(char* message);
+int recv_data(void* arg, char *buf);
 void error_handling(char * message);
 void slice_str(const char * str, char * buffer, size_t start, size_t end);
 int searchAll(MYSQL *);
@@ -34,7 +34,8 @@ char *info(MYSQL *conn, char *username);
 
 int clnt_number=0;
 int clnt_socks[10];
-MYSQL *connection;
+char data[BUFSIZE];
+MYSQL *dbconn;
 
 pthread_mutex_t mutx;
 
@@ -55,21 +56,19 @@ int main(int argc, char **argv)
     // so angry!
     signal(SIGPIPE, SIG_IGN);
 
-    // DB init
-    // mysql default setting is using thread. no need touch
-    connection = NULL;
+    // database init
+    dbconn = NULL;
     mysql_init(&conn);
-    connection = mysql_real_connect(&conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 3306, (char *)NULL, 0);
-    if(connection == NULL){
+    dbconn = mysql_real_connect(&conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 3306, (char *)NULL, 0);
+    if(dbconn == NULL){
             printf("connect error!\n");
             exit(1);
     }
     // ~DB init
 
-    // test sector
-    searchAll(connection);
-    printf("%s", info(connection, "wwwlk"));
-    // ~test
+    // DB CONNTEST
+    searchAll(dbconn);
+    // printf("%s", info(dbconn, "wwwlk"));
 
     if(argc != 2)
     {
@@ -95,10 +94,6 @@ int main(int argc, char **argv)
     if(listen(serv_sock, 5) == -1)
         error_handling("listen() error");
 
-    //   FD_ZERO(&reads);
-    //   FD_SET(serv_sock, &reads);
-    //   fd_max = serv_sock;
-
     while(1)
     {
         clnt_addr_size = sizeof(clnt_addr);   
@@ -118,17 +113,13 @@ int main(int argc, char **argv)
 
 void *clnt_connection(void *arg)
 {
-    /*
-    *   @ bug: at status LOGIN_STATE, Segmentation fault
-    */
-    
-    // TODO: `int clnt_sock = (int) arg;` <= this define so suck. please change
     int clnt_sock = (int) arg;
     int str_len=0;
     char message[BUFSIZE];
-    char *userId_, *command;
     char curUser[0x20];
     char username[0x20];
+    char password[0x20];
+    char command[0x20];
     char textbuf[0x40];
     unsigned int status = GUEST_STATE;
     int i;
@@ -138,61 +129,59 @@ void *clnt_connection(void *arg)
         "[?] bla bla\n"
     };
 
-    while((str_len=read(clnt_sock, message, sizeof(message))) != 0 ) {
-        message[strlen(message) - 1] = 0;
-
-        // message.split()
-        userId_ = strtok(message, " ");
-        command = strtok(NULL, " ");
-
-        // userId_[1:-1]
-        slice_str(userId_, username, 1, sizeof(userId_) - 3);
+    //  debugging code
+    // recv_data(clnt_sock, data);
+    // sprintf(textbuf, "echo '%s' > input", data);
+    // system(textbuf);
+    send_data("id : ");
+    recv_data(clnt_sock, username);
+    send_data("pw : ");
+    recv_data(clnt_sock, password);
+    
+    while((str_len=recv_data(clnt_sock, command)) != 0 ) {
 
         switch(status) {
             // TODO: before login
             case GUEST_STATE:
-                if (login(connection, username, command) == 1) {
+                if (login(dbconn, username, password) == 1) {
                     // print menu
-                    send_text("---------------------------------------\n");
-                    send_text("login\n");
-                    send_text("You are so suck\n");
+                    send_data("---------------------------------------\n");
+                    send_data("login\n");
                     sprintf(textbuf, "Hello mr.%s welcome.\n", username);
-                    send_text(textbuf);
+                    send_data(textbuf);
                     for (i = 0; i < sizeof(logo) / sizeof(logo[0]); i++)
-                        send_text(logo[i]);
+                        send_data(logo[i]);
                     status = LOGIN_STATE;
                     strcpy(curUser, username);
                 }
                 else
-                    send_text("input your passwd\n");
+                    send_data("input your passwd\n");
                 break;
 
             case LOGIN_STATE:
-                // if this code write at client, very very annoying
-                // TODO: this code occur Segmentation fault
                 if (command == NULL) break; 
                 if (command[0] == '0') {
-                    send_text("bye bye\n");
+                    send_data("bye bye\n");
                     status = GUEST_STATE;
                     break;
                 }
                 else if (command[0] == '1') {
                     sprintf(textbuf, "%12s%12s%12s\n", "name", "score", "passwd");
-                    send_text(textbuf);
-                    send_text(info(connection, curUser));
+                    send_data(textbuf);
+                    send_data(info(dbconn, curUser));
                     break;
                 }
                 // print menu
-                send_text("---------------------------------------\n");
-                send_text("login\n");
-                send_text("You are so suck\n");
+                send_data("---------------------------------------\n");
+                send_data("login\n");
+                send_data("You are so suck\n");
                 sprintf(textbuf, "Hello mr.%s welcome.\n", username);
-                send_text(textbuf);
+                send_data(textbuf);
                 for (i = 0; i < sizeof(logo) / sizeof(logo[0]); i++)
-                   send_text(logo[i]);
+                   send_data(logo[i]);
                 break;
             default:
-                send_text("cant land heeeeere\n");
+                send_data("cant land heeeeere\n");
                 break;
         }
     }
@@ -214,27 +203,29 @@ void *clnt_connection(void *arg)
     return 0;
 }
 
-void send_message(char * message, int len)
+void send_data(void *arg, char * data)
 {
-    int i;
-    pthread_mutex_lock(&mutx);
+    int sock = (int)arg;
+    int len = strlen(data);
 
-    for(i=0;i<clnt_number;i++)
-        write(clnt_socks[i], message, len);
+    pthread_mutex_lock(&mutx);
+    write(clnt_socks, data, len);
     pthread_mutex_unlock(&mutx);
 }
 
-void send_text(char * message)
+int recv_data(void* arg, char *buf)
 {
-    int len = strlen(message);
-    int i;
-
-    pthread_mutex_lock(&mutx);
-
-    for(i=0;i<clnt_number;i++)
-        write(clnt_socks[i], message, len);
-    pthread_mutex_unlock(&mutx);
+   int sock = (int) arg;
+   int str_len;
+   while(1)
+   {
+      str_len = read(sock, buf, BUFSIZE-1);
+      if(str_len == -1) return (void*)1;
+      buf[str_len-1]= '\0';
+      return str_len;
+   }
 }
+
 
 void error_handling(char * message)
 {
@@ -243,7 +234,7 @@ void error_handling(char * message)
     exit(1);
 }
 
-// test: mysql usage
+
 int searchAll(MYSQL *conn)
 {
     int field;
@@ -264,7 +255,7 @@ int searchAll(MYSQL *conn)
         printf("\n");
     }
 }
-// ~test
+
 
 char *info(MYSQL *conn, char *username)
 {

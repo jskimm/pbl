@@ -15,7 +15,7 @@ void* recv_message(void* arg);
 void error_handling(char * message);
 
 char name[NAMESIZE] = "[Default]";
-char message[BUFSIZE];
+char buf[BUFSIZE];
 
 int main(int argc, char **argv)
 {
@@ -25,11 +25,9 @@ int main(int argc, char **argv)
    void* thread_result;
 
    if(argc != 4){
-      printf("Usage : %s <ip> <port> \n", argv[0]);
+      printf("Usage : %s <ip> <port> <id>\n", argv[0]);
       exit(1);
    }
-
-   sprintf(name, "[%s]", argv[3]);   
 
    sock = socket(PF_INET, SOCK_STREAM, 0);
    if(sock == -1)
@@ -43,8 +41,8 @@ int main(int argc, char **argv)
    if(connect(sock,(struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
       error_handling("connect() error!");
 
-   pthread_create(&snd_thread, NULL, send_message, (void*)sock);
-   pthread_create(&rcv_thread, NULL, recv_message, (void*)sock);
+   pthread_create(&snd_thread, NULL, send_data, (void*)sock);
+   pthread_create(&rcv_thread, NULL, recv_data, (void*)sock);
 
    pthread_join(snd_thread, &thread_result);
    pthread_join(rcv_thread, &thread_result);
@@ -53,38 +51,40 @@ int main(int argc, char **argv)
    return 0;
 }
 
-void* send_message(void * arg)
+void* send_data(void * arg)
 {
    int sock = (int) arg;
-   char name_message[NAMESIZE+BUFSIZE];
+   char data[BUFSIZE];
    write(sock, "\n", 1);
    while(1){
-     fgets(message, BUFSIZE, stdin);
-     if(!strcmp(message, "q\n")) {
+     fgets(buf, BUFSIZE, stdin);
+     if(!strcmp(buf, "0\n")) {
         close(sock);
       exit(0);
      }
-     sprintf(name_message, "%s %s", name, message);
-     write(sock, name_message, strlen(name_message));
+     sprintf(data, "%s", buf);
+     write(sock, data, strlen(data));
    }
 }
 
-void* recv_message(void* arg)
+void* recv_data(void* arg)
 {
    int sock = (int) arg;
-   char name_message[NAMESIZE+BUFSIZE];
+   char data[BUFSIZE];
    int str_len;
    while(1)
    {
-      str_len = read(sock, name_message, NAMESIZE+BUFSIZE-1);
+      str_len = read(sock, data, BUFSIZE-1);
       if(str_len == -1) return (void*)1;
-      name_message[str_len]= '\0';
-      fputs(name_message,stdout);
+      data[str_len]= '\0';
+      fputs(data, stdout);
    }
 }
 
-void error_handling(char * message)
+
+
+void error_handling(char *data)
 {
-   fputs(message ,stderr);
+   fputs(data ,stderr);
    fputc('\n', stderr);
 }
