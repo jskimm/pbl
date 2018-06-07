@@ -10,8 +10,8 @@
 #define  NAMESIZE 1024
 #define  BUFSIZE 1024
 
-void* send_message(void* arg);
-void* recv_message(void* arg);
+void* send_data(int sock);
+void* recv_data(int sock);
 void error_handling(char * message);
 
 char name[NAMESIZE] = "[Default]";
@@ -41,8 +41,8 @@ int main(int argc, char **argv)
    if(connect(sock,(struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
       error_handling("connect() error!");
 
-   pthread_create(&snd_thread, NULL, send_data, (void*)sock);
-   pthread_create(&rcv_thread, NULL, recv_data, (void*)sock);
+   pthread_create(&snd_thread, NULL, send_data, sock);
+   pthread_create(&rcv_thread, NULL, recv_data, sock);
 
    pthread_join(snd_thread, &thread_result);
    pthread_join(rcv_thread, &thread_result);
@@ -51,9 +51,8 @@ int main(int argc, char **argv)
    return 0;
 }
 
-void* send_data(void * arg)
+void* send_data(int sock)
 {
-   int sock = (int) arg;
    char data[BUFSIZE];
    write(sock, "\n", 1);
    while(1){
@@ -67,9 +66,8 @@ void* send_data(void * arg)
    }
 }
 
-void* recv_data(void* arg)
+void* recv_data(int sock)
 {
-   int sock = (int) arg;
    char data[BUFSIZE];
    int str_len;
    while(1)
