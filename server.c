@@ -69,7 +69,6 @@ int main(int argc, char **argv)
 
     // DB TEST
     searchAll(dbconn);
-    // printf("%s", info(dbconn, "wwwlk"));
 
     if(argc != 2) {
         printf("사용법 : %s <포트>\n", argv[0]);
@@ -123,16 +122,19 @@ void *clnt_connection(int sock)
     char textbuf[0x40];
     unsigned int state = 0;
     int i;
-    char *menu[] = { // 메뉴
+    char *student_menu[] = { // 메뉴
         "[0] 클라이언트 종료\n",
-        "[1] 정보 열람\n",
-        "[?] 미구현\n"
+        "[1] 출결 정보 확인\n",
+        "[2] 성적 조회\n",
+        "[3] 메시지\n"
     };
 
-    //  debugging code
-    // recv_data(sock, data);
-    // sprintf(textbuf, "echo '%s' > input", data);
-    // system(textbuf);
+    char *prof_menu[] = {
+        "[0] 클라이언트 종료\n",
+        "[1] 출결 관리\n",
+        "[?] 성적 입력\n",
+        "[3] 메시지\n"
+    };
 
     recv_data(sock, id); // SOCK_STREAM 버퍼 비움
 
@@ -157,30 +159,38 @@ void *clnt_connection(int sock)
     }
 
     /* 메뉴 기능 */
-    while(1){
-        switch(state){
-            case STUDENT:
-            send_data(sock, "student login\n");
-            break;
-
-            case PROFESSOR:
-            send_data(sock, "prof login\n");
-            break;
-        }
+    while(state != 9){
         send_data(sock, "===================================\n");
         sprintf(textbuf, "%s님 반갑습니다.\n", id);
         send_data(sock, textbuf);
-        for (i = 0; i < sizeof(menu) / sizeof(menu[0]); i++)
-            send_data(sock, menu[i]); 
-        
-        recv_data(sock, command); 
 
-        if ( !strcmp(command,"1") ) { // 1번 선택 시
-            sprintf(textbuf, "%12s%12s%12s\n", "name", "score", "passwd");
-            send_data(sock, textbuf);
-            send_data(sock, info(dbconn, curUser));
+        switch(state){
+            case STUDENT:
+            for (i = 0; i < sizeof(student_menu) / sizeof(student_menu[0]); i++)
+                send_data(sock, student_menu[i]); 
+            recv_data(sock, command); 
+            if ( !strcmp(command,"1") ) { // 1번 선택 시
+                send_data(sock, "학생 1번 메뉴 선택\n");
+            }
+            else continue;
+            break;
+
+            case PROFESSOR:
+            for (i = 0; i < sizeof(prof_menu) / sizeof(prof_menu[0]); i++)
+                send_data(sock, prof_menu[i]); 
+            recv_data(sock, command);
+            if ( !strcmp(command,"1") ) { // 1번 선택 시
+                send_data(sock, "교수 1번 메뉴 선택\n");
+                // send_data(sock, info(dbconn, curUser));
+            }
+            else continue; 
+            break;
+            
+            default: 
+            send_data(sock, "비정상적인 행위 발견. 프로그램 종료\n");
+            state = 9;
         }
-        else continue;
+        
     }
 
     /* 종료 루틴 */
@@ -256,23 +266,23 @@ int searchAll(MYSQL *conn)
 }
 
 
-char *info(MYSQL *conn, char *username)
-{
-    int field;
-    // return buffer
-    static char buf[0x200];
-    MYSQL_RES *sql_result;
-    MYSQL_ROW row;
+// char *info(MYSQL *conn, char *username)
+// {
+//     int field;
+//     // return buffer
+//     static char buf[0x200];
+//     MYSQL_RES *sql_result;
+//     MYSQL_ROW row;
 
-    sprintf(buf,"select * from user where name = \"%s\";", username);
+//     sprintf(buf,"select * from account where id = \"%s\";", username);
     
-    mysql_query(conn, "select * from user");
-    sql_result=mysql_store_result(conn);
-    field=mysql_num_fields(sql_result);
-    row=mysql_fetch_row(sql_result);
-    sprintf(buf,"%12s%12s%12s\n", row[0], row[1], row[2]);
-    return buf;
-}
+//     mysql_query(conn, "select * from user");
+//     sql_result=mysql_store_result(conn);
+//     field=mysql_num_fields(sql_result);
+//     row=mysql_fetch_row(sql_result);
+//     sprintf(buf,"%12s%12s%12s\n", row[0], row[1], row[2]);
+//     return buf;
+// }
 
 int login(MYSQL *conn, char *id, char *pw)
 {
