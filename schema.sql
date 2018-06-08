@@ -1,41 +1,130 @@
--- MySQL dump 10.13  Distrib 5.7.22, for Linux (x86_64)
---
--- Host: localhost    Database: AAAA
--- ------------------------------------------------------
--- Server version	5.7.22-0ubuntu0.16.04.1
+﻿/* TABLE DEFINITION */
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+-- account Table Create SQL
+CREATE TABLE account
+(
+    `id`      VARCHAR(45)    NOT NULL    COMMENT '아이디', 
+    `pw`      VARCHAR(45)    NOT NULL    COMMENT '비밀번호', 
+    `isprof`  INT            NOT NULL    COMMENT 'isprof', 
+    PRIMARY KEY (id)
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
 
---
--- Table structure for table `user`
---
+ALTER TABLE account COMMENT '계정';
 
-DROP TABLE IF EXISTS `user`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user` (
-  `name` varchar(20) DEFAULT NULL,
-  `score` int(20) DEFAULT NULL,
-  `passwd` varchar(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+-- professor Table Create SQL
+CREATE TABLE professor
+(
+    `prof_num`    VARCHAR(45)    NOT NULL    COMMENT '교번', 
+    `id`          VARCHAR(45)    NOT NULL    COMMENT '아이디', 
+    `name`        VARCHAR(45)    NOT NULL    COMMENT '이름', 
+    `department`  VARCHAR(45)    NOT NULL    COMMENT '학과', 
+    `tel`         VARCHAR(45)    NULL        COMMENT '전화번호', 
+    PRIMARY KEY (prof_num)
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
 
--- Dump completed on 2018-06-03 15:05:51
+ALTER TABLE professor COMMENT '교수';
+
+ALTER TABLE professor ADD CONSTRAINT FK_professor_id_account_id FOREIGN KEY (id)
+ REFERENCES account (id)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+
+-- subject Table Create SQL
+CREATE TABLE subject
+(
+    `prof_num`      VARCHAR(45)    NOT NULL    COMMENT '교번', 
+    `subject_code`  VARCHAR(45)    NOT NULL    COMMENT '과목코드', 
+    `name`          VARCHAR(45)    NOT NULL    COMMENT '과목명', 
+    `max`           INT            NOT NULL    COMMENT '정원', 
+    `credit`        INT            NOT NULL    COMMENT '학점', 
+    PRIMARY KEY (subject_code)
+)DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+
+ALTER TABLE subject COMMENT '과목';
+
+ALTER TABLE subject ADD CONSTRAINT FK_subject_prof_num_professor_prof_num FOREIGN KEY (prof_num)
+ REFERENCES professor (prof_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+
+-- student Table Create SQL
+CREATE TABLE student
+(
+    `student_num`  VARCHAR(45)    NOT NULL    COMMENT '학번', 
+    `id`           VARCHAR(45)    NULL        COMMENT '아이디', 
+    `name`         VARCHAR(45)    NOT NULL    COMMENT '이름', 
+    `department`   VARCHAR(45)    NOT NULL    COMMENT '학과', 
+    `tel`          VARCHAR(45)    NULL        COMMENT '전화번호', 
+    PRIMARY KEY (student_num)
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+
+ALTER TABLE student COMMENT '학생';
+
+ALTER TABLE student ADD CONSTRAINT FK_student_id_account_id FOREIGN KEY (id)
+ REFERENCES account (id)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+
+-- score Table Create SQL
+CREATE TABLE score
+(
+    `subject_code`  VARCHAR(45)    NOT NULL    COMMENT '과목코드', 
+    `student_num`   VARCHAR(45)    NOT NULL    COMMENT '학번', 
+    `midterm`       DOUBLE         NOT NULL    COMMENT '중간', 
+    `final`         DOUBLE         NOT NULL    COMMENT '기말', 
+    `homework`      DOUBLE         NOT NULL    COMMENT '과제', 
+    `attendance`    DOUBLE         NOT NULL    COMMENT '출석', 
+    `grade`         VARCHAR(45)    NULL        COMMENT '등급'
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+
+ALTER TABLE score COMMENT '수강(성적)';
+
+ALTER TABLE score ADD CONSTRAINT FK_score_subject_code_subject_subject_code FOREIGN KEY (subject_code)
+ REFERENCES subject (subject_code)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE score ADD CONSTRAINT FK_score_student_num_student_student_num FOREIGN KEY (student_num)
+ REFERENCES student (student_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+
+-- attendance Table Create SQL
+CREATE TABLE attendance
+(
+    `subject_code`  VARCHAR(45)    NOT NULL    COMMENT '과목코드', 
+    `student_num`   VARCHAR(45)    NOT NULL    COMMENT '학번', 
+    `type`          VARCHAR(45)    NOT NULL    COMMENT '종류', 
+    `date`          DATETIME       NOT NULL    COMMENT '날짜', 
+    `reason`        TEXT           NULL        COMMENT '사유'
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+
+ALTER TABLE attendance COMMENT '출결';
+
+ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
+ REFERENCES score (student_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE attendance ADD CONSTRAINT FK_attendance_subject_code_score_subject_code FOREIGN KEY (subject_code)
+ REFERENCES score (subject_code)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+
+-- message Table Create SQL
+CREATE TABLE message
+(
+    `from`      VARCHAR(45)    NULL        COMMENT '보낸이', 
+    `to`        VARCHAR(45)    NULL        COMMENT '받는이', 
+    `content`   TEXT           NULL        COMMENT '내용', 
+    `sendtime`  DATETIME       NULL        COMMENT '보낸시각', 
+    `recvtime`  DATETIME       NULL        COMMENT '받은시각', 
+    `read`      INT            NULL        COMMENT '읽음'
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+
+ALTER TABLE message COMMENT '메시지';
+
+
+/* INSERT DATA */
+insert into account values('jskim', 'jskim', 0);
+insert into account values('test', 'test', 1);
+
+insert into professor values('20101010', 'test', '교수', '컴퓨터공학과', '0101010');
+insert into student values('2014244106', 'jskim', '김지섭', '컴퓨터공학과', '01010101010');
+
+insert into subject values('20101010', '01', 'C언어', 10, 3);
+insert into score values('01', '2014244106', 0,0,0,0, NULL);
+
+insert into attendance values('01', '2014244106', '결석', '2018-06-09 04:10:15', NULL);
