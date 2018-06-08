@@ -14,14 +14,18 @@
 
 #define BUFSIZE 1024
 
-#define GUEST_STATE 0x0
-#define LOGIN_STATE 0x1
+#define STUDENT 0
+#define PROFESSOR 1
 
 // DB 환경설정
 #define DB_HOST "127.0.0.1"     // DB 주소
 #define DB_USER "root"          // DB 계정명
 #define DB_PASS "root"          // DB 패스워드 
 #define DB_NAME "pbl"           // 사용하는 DB
+
+
+//debug
+void debug(char *buf);
 
 void* clnt_connection(int sock);
 void send_data(int sock, char* message);
@@ -110,13 +114,14 @@ int main(int argc, char **argv)
 // 이 부분이 주 루틴
 void *clnt_connection(int sock)
 {
+    int result;
     int str_len=0;
     char curUser[0x20];
-    char username[0x20];
-    char password[0x20];
+    char id[0x20];
+    char pw[0x20];
     char command[0x20];
     char textbuf[0x40];
-    unsigned int status = GUEST_STATE;
+    unsigned int state = 0;
     int i;
     char *menu[] = { // 메뉴
         "[0] 클라이언트 종료\n",
@@ -129,22 +134,41 @@ void *clnt_connection(int sock)
     // sprintf(textbuf, "echo '%s' > input", data);
     // system(textbuf);
 
-    recv_data(sock, username); // SOCK_STREAM 버퍼 비움
+    recv_data(sock, id); // SOCK_STREAM 버퍼 비움
 
     /* 로그인 기능 */
     while(1){
+        result = 0;
         send_data(sock, "[ ID 입력 ]\n");
-        recv_data(sock, username);
+        recv_data(sock, id);
         send_data(sock, "[ PW 입력 ]\n");
-        recv_data(sock, password);
-        if( login(dbconn, username, password) == 1 ) break; // 로그인 성공 시 break
+        recv_data(sock, pw);
+        
+        result = login(dbconn, id, pw);
+        if( result == 0 ){ // 학생 로그인
+            state = STUDENT;
+            break;
+        } 
+        else if( result == 1 ){ // 교수 로그인
+            state = PROFESSOR;
+            break;
+        }
         else send_data(sock, "ID 또는 PW가 잘못되었습니다.\n"); 
     }
 
     /* 메뉴 기능 */
     while(1){
+        switch(state){
+            case STUDENT:
+            send_data(sock, "student login\n");
+            break;
+
+            case PROFESSOR:
+            send_data(sock, "prof login\n");
+            break;
+        }
         send_data(sock, "===================================\n");
-        sprintf(textbuf, "%s님 반갑습니다.\n", username);
+        sprintf(textbuf, "%s님 반갑습니다.\n", id);
         send_data(sock, textbuf);
         for (i = 0; i < sizeof(menu) / sizeof(menu[0]); i++)
             send_data(sock, menu[i]); 
@@ -217,12 +241,12 @@ int searchAll(MYSQL *conn)
     MYSQL_ROW row;
 
     // send query
-    mysql_query(conn, "select * from user");
+    mysql_query(conn, "select * from account");
     // result saved
     sql_result=mysql_store_result(conn);
     // result parsing
     field=mysql_num_fields(sql_result);
-    printf("%12s%12s%12s\n", "name", "score", "passwd");
+    printf("%12s%12s%12s\n", "id", "pw", "isprof");
     // result print
     while((row=mysql_fetch_row(sql_result))){
         for(int i = 0; i < field; i++)
@@ -257,17 +281,23 @@ int login(MYSQL *conn, char *id, char *pw)
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    // changed preparesatement if you want
-    sprintf(buf,"select count(*) from user where name = \"%s\" and passwd = \"%s\";", id, pw);
+    sprintf(buf,"select isprof from account where id = \"%s\" and pw = \"%s\";", id, pw);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
-    field = mysql_num_fields(sql_result);
     row = mysql_fetch_row(sql_result);
-    
-    sprintf(buf, "%s", row[0]);
-    
-    if (!strncmp(buf, "0", 1))
-        return 0;
-    return 1;
-    
+  
+    if ( mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        sprintf(buf, "%s", row[0]); 
+        if (!strncmp(buf, "0", 1)) return 0;     // 학생은 0 반환 
+        else if(!strncmp(buf, "1", 1)) return 1; // 교수는 1 반환
+    }
+    return -1;
+
+}
+
+void debug(char *buf){
+    char testbuf[0x200];
+    sprintf(testbuf, "echo '%s' > debug", buf); 
+    system(testbuf);
+
 }
