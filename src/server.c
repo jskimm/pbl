@@ -34,6 +34,7 @@ void error_handling(char * message);
 int searchAll(MYSQL *);
 int login(MYSQL *, char *id, char *pw, char *num);
 void printAttendance(int sock, MYSQL *conn, char *num);
+void printScore(int sock, MYSQL *conn, char *num);
 char *info(MYSQL *conn, char *username);
 
 int clnt_number=0;
@@ -178,7 +179,7 @@ void *clnt_connection(int sock)
             if ( !strcmp(command,"1") ) { // 1번 선택 시
                 printAttendance(sock, dbconn, num);
             } else if ( !strcmp(command,"2") ){
-                send_data(sock, "학생 2번 메뉴 선택\n");
+                printScore(sock, dbconn, num);
             } else if ( !strcmp(command,"3") ){
                 send_data(sock, "학생 3번 메뉴 선택\n");
             }
@@ -264,15 +265,11 @@ int searchAll(MYSQL *conn)
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    // send query
-    mysql_query(conn, "select * from account");
-    // result saved
-    sql_result=mysql_store_result(conn);
-    // result parsing
-    field=mysql_num_fields(sql_result);
+    mysql_query(conn, "select * from account");    // send query
+    sql_result=mysql_store_result(conn);     // result saved
+    field=mysql_num_fields(sql_result);    // result parsing
     printf("%12s%12s%12s\n", "id", "pw", "isprof");
-    // result print
-    while((row=mysql_fetch_row(sql_result))){
+    while((row=mysql_fetch_row(sql_result))){    // result print
         for(int i = 0; i < field; i++)
             printf("%12s", row[i]);
         printf("\n");
@@ -314,14 +311,10 @@ int login(MYSQL *conn, char *id, char *pw, char *num)
         
         sprintf(buf, "%s", row[0]);
         sprintf(num, "%s", row[1]);           // number 변수에 학번/교번 복사
-        if (!strncmp(buf, "0", 1)){
-            
+        if (!strncmp(buf, "0", 1))
             return 0;     // 학생은 0 반환
-        }  
-        else if(!strncmp(buf, "1", 1)){
-
+        else if(!strncmp(buf, "1", 1))
             return 1; // 교수는 1 반환
-        } 
     }
     return 9;
 
@@ -329,22 +322,41 @@ int login(MYSQL *conn, char *id, char *pw, char *num)
 
 void printAttendance(int sock, MYSQL *conn, char *num)
 {
-    int field;
-    char buf[0x200]="";
-    char tmp[0x30];
+    char buf[0x200];
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select subject.name, attendance.type, attendance.date, attendance.reason from attendance join subject where attendance.student_num=\"%s\";", num);
+    sprintf(buf,"select name, type, date, reason from attendance join subject where student_num=\"%s\";", num);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
 
-    sprintf(buf, "%12s%12s%12s%12s\n", "name", "type", "date", "reason");
+    sprintf(buf, "| %-19s| %-19s| %-19s| %-19s\n", "name", "type", "date", "reason");
     send_data(sock, buf);
     // result print
     while((row=mysql_fetch_row(sql_result))){
         for(int i = 0; i < mysql_num_fields(sql_result); i++){
-            sprintf(buf, "%12s ", row[i]);
+            sprintf(buf, "| %-19s", row[i]);
+            send_data(sock, buf);
+        }
+        send_data(sock, "\n");
+    }
+}
+
+void printScore(int sock, MYSQL *conn, char *num){
+    char buf[0x200];
+    MYSQL_RES *sql_result;
+    MYSQL_ROW row;
+
+    sprintf(buf,"select name, midterm, final, homework, attendance, grade from score join subject where student_num=\"%s\";", num);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+
+    sprintf(buf, "| %-12s| %-12s| %-12s| %-12s| %-12s| %-12s\n", "subject", "midterm", "final", "homework", "attendance", "grade");
+    send_data(sock, buf);
+    // result print
+    while((row=mysql_fetch_row(sql_result))){
+        for(int i = 0; i < mysql_num_fields(sql_result); i++){
+            sprintf(buf, "| %-12s", row[i]);
             send_data(sock, buf);
         }
         send_data(sock, "\n");
