@@ -32,7 +32,8 @@ void send_data(int sock, char* message);
 int recv_data(int sock, char *buf);
 void error_handling(char * message);
 int searchAll(MYSQL *);
-int login(MYSQL *, char *id, char *pw);
+int login(MYSQL *, char *id, char *pw, char *number);
+void printAttendance(int sock, MYSQL *conn, char *number);
 char *info(MYSQL *conn, char *username);
 
 int clnt_number=0;
@@ -115,9 +116,9 @@ void *clnt_connection(int sock)
 {
     int result;
     int str_len=0;
-    char curUser[0x20];
     char id[0x20];
     char pw[0x20];
+    char number[0x10]="";
     char command[0x20];
     char textbuf[0x40];
     unsigned int state = 0;
@@ -146,7 +147,7 @@ void *clnt_connection(int sock)
         send_data(sock, "[ PW 입력 ]\n");
         recv_data(sock, pw);
         
-        result = login(dbconn, id, pw);
+        result = login(dbconn, id, pw, number);
         if( result == 0 ){ // 학생 로그인
             state = STUDENT;
             break;
@@ -161,20 +162,20 @@ void *clnt_connection(int sock)
     /* 메뉴 기능 */
     while(state != 9){
         send_data(sock, "===================================\n");
-        sprintf(textbuf, "%s님 반갑습니다.\n", id);
+        sprintf(textbuf, "%s %s님 반갑습니다.\n", number, id);
         send_data(sock, textbuf);
 
         switch(state){
             case STUDENT: // 학생 화면
             for (i = 0; i < sizeof(student_menu) / sizeof(student_menu[0]); i++)
-                send_data(sock, student_menu[i]); 
+                send_data(sock, student_menu[i]);  // 학생 메뉴 출력
             recv_data(sock, command); 
             if ( !strcmp(command,"1") ) { // 1번 선택 시
-                send_data(sock, "학생 1번 메뉴 선택\n");
+                printAttendance(sock, dbconn, number);
             } else if ( !strcmp(command,"2") ){
-
+                send_data(sock, "학생 2번 메뉴 선택\n");
             } else if ( !strcmp(command,"3") ){
-
+                send_data(sock, "학생 3번 메뉴 선택\n");
             }
             else continue;
             break;
@@ -187,9 +188,9 @@ void *clnt_connection(int sock)
                 send_data(sock, "교수 1번 메뉴 선택\n");
                 // send_data(sock, info(dbconn, curUser));
             } else if ( !strcmp(command,"2") ){
-                    
+                send_data(sock, "교수 2번 메뉴 선택\n");
             } else if ( !strcmp(command,"3") ){
-
+                send_data(sock, "교수 3번 메뉴 선택\n");
             }
             else continue; 
             break;
@@ -292,20 +293,21 @@ int searchAll(MYSQL *conn)
 //     return buf;
 // }
 
-int login(MYSQL *conn, char *id, char *pw)
+int login(MYSQL *conn, char *id, char *pw, char *number)
 {
     int field;
     char buf[0x200];
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select isprof from account where id = \"%s\" and pw = \"%s\";", id, pw);
+    sprintf(buf,"select isprof, number from account where id = \"%s\" and pw = \"%s\";", id, pw);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
     row = mysql_fetch_row(sql_result);
-  
+    
     if ( mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
-        sprintf(buf, "%s", row[0]); 
+        sprintf(buf, "%s", row[0]);
+        sprintf(number, "%s", row[1]);           // number 변수에 학번/교번 복사
         if (!strncmp(buf, "0", 1)) return 0;     // 학생은 0 반환 
         else if(!strncmp(buf, "1", 1)) return 1; // 교수는 1 반환
     }
@@ -313,9 +315,31 @@ int login(MYSQL *conn, char *id, char *pw)
 
 }
 
+void printAttendance(int sock, MYSQL *conn, char *number)
+{
+    int field;
+    char buf[0x200]="";
+    char tmp[0x30];
+    MYSQL_RES *sql_result;
+    MYSQL_ROW row;
+
+    sprintf(buf,"select subject.name, attendance.type, attendance.date, attendance.reason from attendance join subject where attendance.student_num=\"%s\";", number);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+
+    ("%12s%12s%12s%12s\n", "name", "type", "date", "reason");
+    // result print
+    while((row=mysql_fetch_row(sql_result))){
+        for(int i = 0; i < mysql_num_fields(sql_result); i++){
+            sprintf(buf, "%12s ", row[i]);
+            send_data(sock, buf);
+        }
+        send_data(sock, "\n");
+    }
+}
+
 void debug(char *buf){
     char testbuf[0x200];
     sprintf(testbuf, "echo '%s' > debug", buf); 
     system(testbuf);
-
 }
