@@ -35,7 +35,6 @@ int searchAll(MYSQL *);
 int login(MYSQL *, char *id, char *pw, char *num);
 void printAttendance(int sock, MYSQL *conn, char *num);
 void printScore(int sock, MYSQL *conn, char *num);
-char *info(MYSQL *conn, char *username);
 
 int clnt_number=0;
 int clnt_socks[10]; // Client socket을 담는 배열
@@ -276,25 +275,6 @@ int searchAll(MYSQL *conn)
     }
 }
 
-
-// char *info(MYSQL *conn, char *username)
-// {
-//     int field;
-//     // return buffer
-//     static char buf[0x200];
-//     MYSQL_RES *sql_result;
-//     MYSQL_ROW row;
-
-//     sprintf(buf,"select * from account where id = \"%s\";", username);
-    
-//     mysql_query(conn, "select * from user");
-//     sql_result=mysql_store_result(conn);
-//     field=mysql_num_fields(sql_result);
-//     row=mysql_fetch_row(sql_result);
-//     sprintf(buf,"%12s%12s%12s\n", row[0], row[1], row[2]);
-//     return buf;
-// }
-
 int login(MYSQL *conn, char *id, char *pw, char *num)
 {
     int field;
@@ -363,8 +343,25 @@ void printScore(int sock, MYSQL *conn, char *num){
     }
 }
 
+int insertAttendance(int sock, MYSQL *conn){
+    char buf[0x200];
+    MYSQL_RES *sql_result;
+    MYSQL_ROW row;
+
+    // 과목 선택
+    // 학생 모두 출력
+    // 학번 입력
+    // 입력한 학번 존재? --> 학생의 날짜 출결 사유 순서대로 입력
+    // db update
+
+    //select midterm+final+homework as total from score order by total desc;
+
+
+}
+
 void debug(char *buf){
     char testbuf[0x200];
     sprintf(testbuf, "echo '%s' > debug", buf); 
     system(testbuf);
 }
+

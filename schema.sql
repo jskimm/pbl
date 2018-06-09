@@ -99,8 +99,8 @@ CREATE TABLE attendance
 
 ALTER TABLE attendance COMMENT '출결';
 
-ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
- REFERENCES score (student_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+-- ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
+--  REFERENCES score (student_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE attendance ADD CONSTRAINT FK_attendance_subject_code_score_subject_code FOREIGN KEY (subject_code)
  REFERENCES score (subject_code)  ON DELETE RESTRICT ON UPDATE RESTRICT;
@@ -127,6 +127,6 @@ insert into professor values('20101010', 'test', '교수', '컴퓨터공학과',
 insert into student values('2014244106', 'jskim', '김지섭', '컴퓨터공학과', '01010101010');
 
 insert into subject values('20101010', '01', 'C language', 10, 3);
-insert into score values('01', '2014244106', 0,0,0,0, NULL);
+insert into score values('01', '2014244106', 20,10,0,0, NULL);
 
 insert into attendance values('01', '2014244106', 'absent', '2018-06-09 04:10:15','');
