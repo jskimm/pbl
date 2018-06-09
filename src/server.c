@@ -354,7 +354,7 @@ int insertAttendance(int sock, MYSQL *conn){
     // 입력한 학번 존재? --> 학생의 날짜 출결 사유 순서대로 입력
     // db update
 
-    //select midterm+final+homework as total from score order by total desc;
+    // select midterm+final+homework as total from score order by total desc;
 
 
 }
