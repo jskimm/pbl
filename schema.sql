@@ -1,12 +1,15 @@
 ﻿/* TABLE DEFINITION */
+-- DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+-- account Table Create SQL
 
 -- account Table Create SQL
 CREATE TABLE account
 (
     `id`      VARCHAR(45)    NOT NULL    COMMENT '아이디', 
     `pw`      VARCHAR(45)    NOT NULL    COMMENT '비밀번호', 
+    `num`     VARCHAR(45)    NOT NULL    COMMENT '학번/교번', 
     `isprof`  INT            NOT NULL    COMMENT 'isprof', 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id, num)
 ) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
 
 ALTER TABLE account COMMENT '계정';
@@ -38,7 +41,7 @@ CREATE TABLE subject
     `max`           INT            NOT NULL    COMMENT '정원', 
     `credit`        INT            NOT NULL    COMMENT '학점', 
     PRIMARY KEY (subject_code)
-)DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
 
 ALTER TABLE subject COMMENT '과목';
 
@@ -116,10 +119,9 @@ CREATE TABLE message
 
 ALTER TABLE message COMMENT '메시지';
 
-
 /* INSERT DATA */
-insert into account values('jskim', 'jskim', 0);
-insert into account values('test', 'test', 1);
+insert into account values('jskim', 'jskim','2014244106', 0);
+insert into account values('test', 'test', '20101010', 1);
 
 insert into professor values('20101010', 'test', '교수', '컴퓨터공학과', '0101010');
 insert into student values('2014244106', 'jskim', '김지섭', '컴퓨터공학과', '01010101010');

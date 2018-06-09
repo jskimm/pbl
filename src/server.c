@@ -32,8 +32,8 @@ void send_data(int sock, char* message);
 int recv_data(int sock, char *buf);
 void error_handling(char * message);
 int searchAll(MYSQL *);
-int login(MYSQL *, char *id, char *pw, char *number);
-void printAttendance(int sock, MYSQL *conn, char *number);
+int login(MYSQL *, char *id, char *pw, char *num);
+void printAttendance(int sock, MYSQL *conn, char *num);
 char *info(MYSQL *conn, char *username);
 
 int clnt_number=0;
@@ -118,9 +118,14 @@ void *clnt_connection(int sock)
     int str_len=0;
     char id[0x20];
     char pw[0x20];
-    char number[0x10]="";
+    char num[0x10]="";
     char command[0x20];
     char textbuf[0x40];
+    /* 
+        state 1 : STUDENT
+        state 2 : PROFESSOR
+        state 9 : GUEST
+    */
     unsigned int state = 0;
     int i;
     char *student_menu[] = { // 메뉴
@@ -147,7 +152,7 @@ void *clnt_connection(int sock)
         send_data(sock, "[ PW 입력 ]\n");
         recv_data(sock, pw);
         
-        result = login(dbconn, id, pw, number);
+        result = login(dbconn, id, pw, num);
         if( result == 0 ){ // 학생 로그인
             state = STUDENT;
             break;
@@ -162,7 +167,7 @@ void *clnt_connection(int sock)
     /* 메뉴 기능 */
     while(state != 9){
         send_data(sock, "===================================\n");
-        sprintf(textbuf, "%s %s님 반갑습니다.\n", number, id);
+        sprintf(textbuf, "%s %s님 반갑습니다.\n", num, id);
         send_data(sock, textbuf);
 
         switch(state){
@@ -171,7 +176,7 @@ void *clnt_connection(int sock)
                 send_data(sock, student_menu[i]);  // 학생 메뉴 출력
             recv_data(sock, command); 
             if ( !strcmp(command,"1") ) { // 1번 선택 시
-                printAttendance(sock, dbconn, number);
+                printAttendance(sock, dbconn, num);
             } else if ( !strcmp(command,"2") ){
                 send_data(sock, "학생 2번 메뉴 선택\n");
             } else if ( !strcmp(command,"3") ){
@@ -293,29 +298,36 @@ int searchAll(MYSQL *conn)
 //     return buf;
 // }
 
-int login(MYSQL *conn, char *id, char *pw, char *number)
+int login(MYSQL *conn, char *id, char *pw, char *num)
 {
     int field;
     char buf[0x200];
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select isprof, number from account where id = \"%s\" and pw = \"%s\";", id, pw);
+    sprintf(buf,"select isprof, num from account where id = \"%s\" and pw = \"%s\";", id, pw);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
     row = mysql_fetch_row(sql_result);
     
     if ( mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        
         sprintf(buf, "%s", row[0]);
-        sprintf(number, "%s", row[1]);           // number 변수에 학번/교번 복사
-        if (!strncmp(buf, "0", 1)) return 0;     // 학생은 0 반환 
-        else if(!strncmp(buf, "1", 1)) return 1; // 교수는 1 반환
+        sprintf(num, "%s", row[1]);           // number 변수에 학번/교번 복사
+        if (!strncmp(buf, "0", 1)){
+            
+            return 0;     // 학생은 0 반환
+        }  
+        else if(!strncmp(buf, "1", 1)){
+
+            return 1; // 교수는 1 반환
+        } 
     }
-    return -1;
+    return 9;
 
 }
 
-void printAttendance(int sock, MYSQL *conn, char *number)
+void printAttendance(int sock, MYSQL *conn, char *num)
 {
     int field;
     char buf[0x200]="";
@@ -323,11 +335,12 @@ void printAttendance(int sock, MYSQL *conn, char *number)
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select subject.name, attendance.type, attendance.date, attendance.reason from attendance join subject where attendance.student_num=\"%s\";", number);
+    sprintf(buf,"select subject.name, attendance.type, attendance.date, attendance.reason from attendance join subject where attendance.student_num=\"%s\";", num);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
 
-    ("%12s%12s%12s%12s\n", "name", "type", "date", "reason");
+    sprintf(buf, "%12s%12s%12s%12s\n", "name", "type", "date", "reason");
+    send_data(sock, buf);
     // result print
     while((row=mysql_fetch_row(sql_result))){
         for(int i = 0; i < mysql_num_fields(sql_result); i++){
