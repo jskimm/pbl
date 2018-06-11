@@ -118,7 +118,6 @@ int main(int argc, char **argv)
 void *clnt_connection(int sock)
 {
     int result;
-    int str_len=0;
     char id[0x20];
     char pw[0x20];
     char num[0x10]="";
@@ -184,7 +183,7 @@ void *clnt_connection(int sock)
                 printScore(sock, dbconn, num);
             } else if ( !strcmp(command,"3") ){
                 send_data(sock, "학생 3번 메뉴 선택\n");
-            } else if ( !strcmp(command,"9") ){
+            } else if ( !strcmp(command,"0") ){
                 state = 9;
             }
             else continue;
@@ -200,7 +199,7 @@ void *clnt_connection(int sock)
                 send_data(sock, "교수 2번 메뉴 선택\n");
             } else if ( !strcmp(command,"3") ){
                 send_data(sock, "교수 3번 메뉴 선택\n");
-            } else if ( !strcmp(command,"9") ){
+            } else if ( !strcmp(command,"0") ){
                 state = 9;
             }
             else continue; 
