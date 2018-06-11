@@ -57,10 +57,10 @@ void* send_data(int sock)
    write(sock, "\n", 1);
    while(1){
      fgets(buf, BUFSIZE, stdin);
-     if(!strcmp(buf, "0\n")) { // 0 입력 시 클라이언트 종료
-        close(sock);
-      exit(0);
-     }
+    //  if(!strcmp(buf, "0\n")) { // 0 입력 시 클라이언트 종료
+    //     close(sock);
+    //   exit(0);
+    //  }
      sprintf(data, "%s", buf);
      write(sock, data, strlen(data));
    }
