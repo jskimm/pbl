@@ -99,11 +99,11 @@ CREATE TABLE attendance
 
 ALTER TABLE attendance COMMENT '출결';
 
--- ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
---  REFERENCES score (student_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
+ REFERENCES score (student_num);
 
 ALTER TABLE attendance ADD CONSTRAINT FK_attendance_subject_code_score_subject_code FOREIGN KEY (subject_code)
- REFERENCES score (subject_code)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+ REFERENCES score (subject_code);
 
 
 -- message Table Create SQL
@@ -121,15 +121,22 @@ ALTER TABLE message COMMENT '메시지';
 
 /* INSERT DATA */
 insert into account values('jskim', 'jskim','2014244106', 0);
+insert into account values('fuck', 'fuck','2011000000', 0);
+
 
 insert into account values('test', 'test', '20101010', 1);
 
 insert into professor values('20101010', 'test', '교수', '컴퓨터공학과', '0101010');
 insert into student values('2014244106', 'jskim', '김지섭', '컴퓨터공학과', '01010101010');
+insert into student values('2011000000', 'fuck', 'fuck', '컴퓨터공학과', '01010101010');
+
 
 
 insert into subject values('20101010', '01', 'C language', 10, 3);
-insert into score values('01', '2014244106', 20,10,0,0, NULL);
+insert into score values('01', '2014244106', 20,10,10,10, NULL);
+insert into score values('01', '2011000000', 30,5,10,10, NULL);
+
 
 
 insert into attendance values('01', '2014244106', 'absent', '2018-06-09 04:10:15','');
+insert into attendance values('01', '2011000000', 'late', '2018-05-01 04:10:15','늦잠');

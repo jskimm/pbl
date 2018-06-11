@@ -99,11 +99,11 @@ CREATE TABLE attendance
 
 ALTER TABLE attendance COMMENT '출결';
 
--- ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
---  REFERENCES score (student_num)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE attendance ADD CONSTRAINT FK_attendance_student_num_score_student_num FOREIGN KEY (student_num)
+ REFERENCES score (student_num);
 
 ALTER TABLE attendance ADD CONSTRAINT FK_attendance_subject_code_score_subject_code FOREIGN KEY (subject_code)
- REFERENCES score (subject_code)  ON DELETE RESTRICT ON UPDATE RESTRICT;
+ REFERENCES score (subject_code);
 
 
 -- message Table Create SQL
