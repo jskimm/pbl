@@ -54,6 +54,7 @@ int main(int argc, char **argv)
     struct sockaddr_in clnt_addr;
     int clnt_addr_size;
     pthread_t thread;
+    pthread_attr_t attr;
     MYSQL conn;
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
@@ -62,25 +63,27 @@ int main(int argc, char **argv)
 
     signal(SIGPIPE, SIG_IGN);
 
-    // 데이터베이스 연결
-    dbconn = NULL;
-    mysql_init(&conn);
-    dbconn = mysql_real_connect(&conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 3306, (char *)NULL, 0);
-    if(dbconn == NULL){
-            printf("DB 연결 에러\n");
-            exit(1);
-    }
-
-    // DB TEST
-    searchAll(dbconn);
-
     if(argc != 2) {
         printf("사용법 : %s <포트>\n", argv[0]);
         exit(1);
     }
 
+    // 데이터베이스 초기화 및 연결
+    dbconn = NULL;
+    mysql_init(&conn);
+    dbconn = mysql_real_connect(&conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 3306, (char *)NULL, 0);
+    if(dbconn == NULL) {
+        printf("DB 연결 에러\n");
+        exit(1);
+    }
+    // DB TEST
+    searchAll(dbconn);
+
     if(pthread_mutex_init(&mutx, NULL))
         error_handling("MUTEX 초기화 에러");
+
+    // if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)!=0)
+    //     error_handling("setdetachstate 에러");
 
     serv_sock = socket(PF_INET, SOCK_STREAM, 0);
     if(serv_sock == -1)
@@ -103,12 +106,12 @@ int main(int argc, char **argv)
         clnt_sock = accept(serv_sock, (struct sockaddr *)&clnt_addr, &clnt_addr_size);
 
         pthread_mutex_lock(&mutx);
-
         clnt_socks[clnt_number++]=clnt_sock;
         pthread_mutex_unlock(&mutx);
 
         pthread_create(&thread, NULL, (void *)clnt_connection, clnt_sock);
         printf(" 연결된 IP : %s \n", inet_ntoa(clnt_addr.sin_addr));
+        pthread_detach(thread);
     }
     return 0;
 
@@ -217,14 +220,14 @@ void *clnt_connection(int sock)
     for(i=0;i<clnt_number;i++){ 
         if(sock == clnt_socks[i])
         {
-            for(;i<clnt_number-1;i++)
+                for(;i<clnt_number-1;i++)
             clnt_socks[i] = clnt_socks[i+1];
             break;
         }
     }
     clnt_number--;
-
     pthread_mutex_unlock(&mutx);
+
     /* 소켓 닫음 */
     close(sock);
     return 0;
@@ -244,13 +247,15 @@ void send_data(int sock, char *data)
 // 데이터 받기
 int recv_data(int sock, char *buf) 
 {
-   int str_len;
-   while(1) {
-      str_len = read(sock, buf, BUFSIZE-1);
-      if(str_len == -1) return (void*)1;
-      buf[str_len-1]= '\0';
-      return str_len;
-   }
+    int str_len;
+    while(1) {
+        str_len = read(sock, buf, BUFSIZE-1);
+        // if(str_len == -1) return (void*)1;
+        if (str_len > 0 && buf[str_len - 1] == '\n') 
+            buf[str_len - 1] = '\0';
+        if(str_len == 0) return (void*)-1;
+        return str_len;
+    }
 }
 
 
@@ -297,7 +302,7 @@ int login(MYSQL *conn, char *id, char *pw, char *num)
         if (!strncmp(buf, "0", 1))
             return 0;     // 학생은 0 반환
         else if(!strncmp(buf, "1", 1))
-            return 1; // 교수는 1 반환
+            return 1;     // 교수는 1 반환
     }
     return 9;
 
