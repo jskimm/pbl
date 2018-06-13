@@ -6,6 +6,7 @@
 CREATE TABLE account
 (
     `id`      VARCHAR(45)    NOT NULL    COMMENT '아이디', 
+    `name`    VARCHAR(45)    NOT NULL    COMMENT '이름', 
     `pw`      VARCHAR(45)    NOT NULL    COMMENT '비밀번호', 
     `num`     VARCHAR(45)    NOT NULL    COMMENT '학번/교번', 
     `isprof`  INT            NOT NULL    COMMENT 'isprof', 
@@ -112,108 +113,56 @@ CREATE TABLE message
     `from`      VARCHAR(45)    NULL        COMMENT '보낸이', 
     `to`        VARCHAR(45)    NULL        COMMENT '받는이', 
     `content`   TEXT           NULL        COMMENT '내용', 
-    `sendtime`  DATETIME       NULL        COMMENT '보낸시각', 
-    `recvtime`  DATETIME       NULL        COMMENT '받은시각', 
-    `read`      INT            NULL        COMMENT '읽음'
+    `sendtime`  DATETIME       NULL        COMMENT '보낸시각'
 ) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
 
 ALTER TABLE message COMMENT '메시지';
 
 
 /* INSERT DATA */
-
-
-
-
-
-
-insert into account values
-('chw001','password','2014244001','0');
-insert into account values
-('psw002','password','2014244002','0');
-insert into account values
-('kms003','password','2017244003','0');
-insert into account values
-('khm004','password','2018244004','0');
-insert into account values
-('kmc005','password','2013244005','0');
-insert into account values
-('kjk006','password','2014244006','0');
-insert into account values
-('nice007','password','2014244007','0');
-insert into account values
-('lsj008','password','2016244008','0');
-insert into account values
-('kjs009','password','2012244009','0');
-insert into account values
-('kyu010','password','2018244010','0');
-insert into account values
-('ksh011','password','2017244011','0');
-insert into account values
-('kht012','password','2015244012','0');
-insert into account values
-('gjh013','password','2015244013','0');
-insert into account values
-('sye014','password','2016244014','0');
-insert into account values
-('nmr015','password','2018244015','0');
-insert into account values
-('yhe016','password','2017244016','0');
-insert into account values
-('kjh017','password','2013244017','0');
-insert into account values
-('kdw018','password','2015244018','0');
-insert into account values
-('kkm019','password','2017244019','0');
-insert into account values
-('yjm020','password','2015244020','0');
-insert into account values
-('kyr021','password','2016244021','0');
-insert into account values
-('kjm022','password','2017244022','0');
-insert into account values
-('kjy023','password','2018244023','0');
-insert into account values
-('kjy024','password','2015244024','0');
-insert into account values
-('kkr025','password','2017244025','0');
-insert into account values
-('kkh026','password','2017244026','0');
-insert into account values
-('ksw027','password','2014244027','0');
-insert into account values
-('kyg028','password','2012244028','0');
-insert into account values
-('kyh029','password','2013244029','0');
-insert into account values
-('kws030','password','2013244030','0');
-insert into account values
-('kjh031','password','2015244031','0');
-insert into account values
-('kjh032','password','2016244032','0');
-insert into account values
-('kyh033','password','2012244033','0');
-insert into account values
-('njh034','password','2016244034','0');
-insert into account values
-('kjg033','password','2014244035','0');
-insert into account values
-('ljh034','password','2013244036','0');
-insert into account values
-('rcb035','password','19800402','1');
-insert into account values
-('kmj036','password','19900512','1');
-insert into account values
-('bjw037','password','19920623','1');
-insert into account values
-('syd038','password','19890725','1');
-insert into account values
-('sjh039','password','19870723','1');
-insert into account values
-('cjs040','password','19990923','1');
-insert into account values
-('ahs041','password','20000102','1');
-
+insert into account values('chw001','최현우','password','2014244001','0');
+insert into account values('psw002','박성우','password','2014244002','0');
+insert into account values('kms003','김명섭','password','2017244003','0');
+insert into account values('khm004','김형민','password','2018244004','0');
+insert into account values('kmc005','김민찬','password','2013244005','0');
+insert into account values('kjk006','김진겸','password','2014244006','0');
+insert into account values('nice007','나이수','password','2014244007','0');
+insert into account values('lsj008','이수진','password','2016244008','0');
+insert into account values('kjs009','김지수','password','2012244009','0');
+insert into account values('kyu010','김예은','password','2018244010','0');
+insert into account values('ksh011','김수현','password','2017244011','0');
+insert into account values('kht012','김현태','password','2015244012','0');
+insert into account values('gjh013','권지혜','password','2015244013','0');
+insert into account values('sye014','서연이','password','2016244014','0');
+insert into account values('nmr015','노미란','password','2018244015','0');
+insert into account values('yhe016','윤혜은','password','2017244016','0');
+insert into account values('kjh017','김장환','password','2013244017','0');
+insert into account values('kdw018','강동우','password','2015244018','0');
+insert into account values('kkm019','김경민','password','2017244019','0');
+insert into account values('yjm020','유정민','password','2015244020','0');
+insert into account values('kyr021','고예림','password','2016244021','0');
+insert into account values('kjm022','구준모','password','2017244022','0');
+insert into account values('kjy023','권준영','password','2018244023','0');
+insert into account values('kjy024','강지영','password','2015244024','0');
+insert into account values('kkr025','김규리','password','2017244025','0');
+insert into account values('kkh026','김기현','password','2017244026','0');
+insert into account values('ksw027','김서원','password','2014244027','0');
+insert into account values('kyg028','김영규','password','2012244028','0');
+insert into account values('kyh029','김영훈','password','2013244029','0');
+insert into account values('kws030','김원섭','password','2013244030','0');
+insert into account values('kjh031','김주환','password','2015244031','0');
+insert into account values('kjh032','김재훈','password','2016244032','0');
+insert into account values('kyh033','김용환','password','2012244033','0');
+insert into account values('njh034','남진호','password','2016244034','0');
+insert into account values('kjg033','김정균','password','2014244035','0');
+insert into account values('ljh034','이정훈','password','2013244036','0');
+insert into account values('rcb035','류창빈','password','19800402','1');
+insert into account values('kmj036','김민지','password','19900512','1');
+insert into account values('bjw037','배지웅','password','19920623','1');
+insert into account values('syd038','서윤덕','password','19890725','1');
+insert into account values('sjh039','서정훈','password','19870723','1');
+insert into account values('cjs040','최재성','password','19990923','1');
+insert into account values('ahs041','안혜선','password','20000102','1');
 
 
 insert into student values('2014244001','chw001','최현우','computer engineering','01031312424');
@@ -255,21 +204,13 @@ insert into student values('2013244036','ljh034','이정훈','electronic enginee
 
 
 
-insert into professor values
-('19800402','rcb035','류창빈','computer engineering','01021213131');
-insert into professor values
-('19900512','kmj036','김민지','computer engineering','01021213132');
-insert into professor values
-('19920623','bjw037','배지웅','computer engineering','01021213132');
-insert into professor values
-('19890725','syd038','서윤덕','computer engineering','01021213133');
-insert into professor values
-('19870723','sjh039','서정훈','computer engineering','01021213134');
-insert into professor values
-('19990923','cjs040','최재성','computer engineering','01021213135');
-insert into professor values
-('20000102','ahs041','안혜선','computer engineering','01021213136');
-
+insert into professor values('19800402','rcb035','류창빈','computer engineering','01021213131');
+insert into professor values('19900512','kmj036','김민지','computer engineering','01021213132');
+insert into professor values('19920623','bjw037','배지웅','computer engineering','01021213132');
+insert into professor values('19890725','syd038','서윤덕','computer engineering','01021213133');
+insert into professor values('19870723','sjh039','서정훈','computer engineering','01021213134');
+insert into professor values('19990923','cjs040','최재성','computer engineering','01021213135');
+insert into professor values('20000102','ahs041','안혜선','computer engineering','01021213136');
 
 insert into subject values('19800402','01','data structure',10,3);
 insert into subject values('19900512','02','iot',10,3);
