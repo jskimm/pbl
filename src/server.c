@@ -71,6 +71,8 @@ int main(int argc, char **argv)
     // 데이터베이스 초기화 및 연결
     dbconn = NULL;
     mysql_init(&conn);
+    mysql_options(&conn, MYSQL_SET_CHARSET_NAME, "utf8");       // set encoding
+    mysql_options(&conn, MYSQL_INIT_COMMAND, "SET NAMES utf8"); // set encoding
     dbconn = mysql_real_connect(&conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 3306, (char *)NULL, 0);
     if(dbconn == NULL) {
         printf("DB 연결 에러\n");
@@ -314,7 +316,7 @@ void printAttendance(int sock, MYSQL *conn, char *num)
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select name, type, date, reason from attendance join subject where student_num=\"%s\";", num);
+    sprintf(buf,"select (select name from subject where subject_code=attendance.subject_code), type, date, student_num from attendance where student_num=\"%s\";", num);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
 
@@ -361,10 +363,15 @@ int insertAttendance(int sock, MYSQL *conn, char *num){
     MYSQL_ROW row;
 
     // 과목 선택
+    // TODO : 교수가 강의하지 않는 과목도 질의 가능
     send_data(sock, "[*] 현재 강의 중인 과목\n");
     sprintf(buf,"select subject_code, name, credit from subject where prof_num=\"%s\";", num);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
+    if (!mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        send_data(sock, "[-] 현재 강의중인 과목이 없습니다.\n");
+        return 0;    
+    }
     sprintf(buf, "| %-15s| %-15s| %-15s\n", "subject code", "subject", "credit");
     send_data(sock, buf);
     while((row=mysql_fetch_row(sql_result))){
@@ -406,23 +413,22 @@ int insertAttendance(int sock, MYSQL *conn, char *num){
     sql_result = mysql_store_result(conn);
     if ( mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
         // 종류 입력 (absent, late, early)
-        send_data(sock, "출결 정보를 입력하세요. (absent, late, early)\n");
+        send_data(sock, "[*] 출결 정보를 입력하세요. (absent, late, early)\n");
         recv_data(sock, type);
         // 사유 입력
-        send_data(sock, "사유를 입력하세요. (미 입력 시 공란)\n");
+        send_data(sock, "[*] 사유를 입력하세요. (미 입력 시 공란)\n");
         recv_data(sock, reason);
         // db insert
         sprintf(buf, "insert into attendance values (\"%s\", \"%s\", \"%s\", now(), \"%s\");", 
                         subject_code, student_num, type, reason);
         mysql_query(conn, buf);
-        // sql_result = mysql_store_result(conn);
         return 1;
     }
     else send_data(sock, "[-] 해당 학번이 존재하지 않습니다.\n");
     return 0;
-
-
 }
+
+
 
 void debug(char *buf){
     char testbuf[0x200];
