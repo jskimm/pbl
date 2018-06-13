@@ -33,11 +33,16 @@ int recv_data(int sock, char *buf);
 void error_handling(char * message);
 int searchAll(MYSQL *);
 int login(MYSQL *, char *id, char *pw, char *num);
+
 /* STUDENT */
 void printAttendance(int sock, MYSQL *conn, char *num);
 void printScore(int sock, MYSQL *conn, char *num);
 /* PROFESSOR */
 int insertAttendance(int sock, MYSQL *conn, char *num);
+int insertScore(int sock, MYSQL *conn, char *num);
+/* MESSAGE */
+int sendMessage(int sock, MYSQL *conn, char *from, int state);
+int messageBox(int sock, MYSQL *conn, char *num, int state);
 
 int clnt_number=0;
 int clnt_socks[10]; // Client socket을 담는 배열
@@ -139,14 +144,16 @@ void *clnt_connection(int sock)
         "[0] 클라이언트 종료\n",
         "[1] 출결 정보 확인\n",
         "[2] 성적 조회\n",
-        "[3] 메시지\n"
+        "[3] 메시지 전송\n",
+        "[4] 메시지함\n",
     };
 
     char *prof_menu[] = {
         "[0] 클라이언트 종료\n",
         "[1] 출결 관리\n",
-        "[?] 성적 입력\n",
-        "[3] 메시지\n"
+        "[2] 성적 입력\n",
+        "[3] 메시지 전송\n",
+        "[4] 메시지함\n",
     };
 
     recv_data(sock, id); // SOCK_STREAM 버퍼 비움
@@ -187,7 +194,9 @@ void *clnt_connection(int sock)
             } else if ( !strcmp(command,"2") ){
                 printScore(sock, dbconn, num);
             } else if ( !strcmp(command,"3") ){
-                send_data(sock, "학생 3번 메뉴 선택\n");
+                sendMessage(sock, dbconn, num, state);
+            } else if ( !strcmp(command,"4") ){
+                messageBox(sock, dbconn, num, state);
             } else if ( !strcmp(command,"0") ){
                 state = 9;
             }
@@ -201,9 +210,11 @@ void *clnt_connection(int sock)
             if ( !strcmp(command,"1") ) { // 1번 선택 시
                 insertAttendance(sock, dbconn, num);
             } else if ( !strcmp(command,"2") ){
-                send_data(sock, "교수 2번 메뉴 선택\n");
+                insertScore(sock, dbconn, num);
             } else if ( !strcmp(command,"3") ){
-                send_data(sock, "교수 3번 메뉴 선택\n");
+                sendMessage(sock, dbconn, num, state);
+            } else if ( !strcmp(command,"4") ){
+                messageBox(sock, dbconn, num, state);
             } else if ( !strcmp(command,"0") ){
                 state = 9;
             }
@@ -255,6 +266,7 @@ int recv_data(int sock, char *buf)
         // if(str_len == -1) return (void*)1;
         if (str_len > 0 && buf[str_len - 1] == '\n') 
             buf[str_len - 1] = '\0';
+
         if(str_len == 0) return (void*)-1;
         return str_len;
     }
@@ -316,7 +328,7 @@ void printAttendance(int sock, MYSQL *conn, char *num)
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select (select name from subject where subject_code=attendance.subject_code), type, date, student_num from attendance where student_num=\"%s\";", num);
+    sprintf(buf,"select (select name from subject where subject_code=attendance.subject_code), type, date, reason from attendance where student_num=\"%s\";", num);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
 
@@ -337,7 +349,7 @@ void printScore(int sock, MYSQL *conn, char *num){
     MYSQL_RES *sql_result;
     MYSQL_ROW row;
 
-    sprintf(buf,"select name, midterm, final, homework, attendance, grade from score join subject where student_num=\"%s\";", num);
+    sprintf(buf,"select (select name from subject where subject_code=score.subject_code), midterm, final, homework, attendance, grade from score where student_num=\"%s\";", num);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
 
@@ -385,7 +397,7 @@ int insertAttendance(int sock, MYSQL *conn, char *num){
     recv_data(sock, subject_code); // 과목코드 입력
 
     // 학생 모두 출력
-    sprintf(buf,"select distinct student.student_num, name, tel from score join student where subject_code=\"%s\";", subject_code);
+    sprintf(buf,"select student_num, (select name from student where student_num=score.student_num) from score where subject_code=\"%s\";", subject_code);
     mysql_query(conn, buf);
     sql_result = mysql_store_result(conn);
     if (!mysql_num_rows(sql_result)){
@@ -428,7 +440,134 @@ int insertAttendance(int sock, MYSQL *conn, char *num){
     return 0;
 }
 
+int insertScore(int sock, MYSQL *conn, char *num) {
+    char midterm[20], final[20], homework[20], attendance[20];
+    char student_num[20];
+    char subject_code[20];
+    char buf[200];
+    MYSQL_RES *sql_result;
+    MYSQL_ROW row;
 
+    send_data(sock, "[*] 현재 강의 중인 과목\n");
+    sprintf(buf,"select subject_code, name, credit from subject where prof_num=\"%s\";", num);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+    if (!mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        send_data(sock, "[-] 현재 강의중인 과목이 없습니다.\n");
+        return 0;    
+    }
+    sprintf(buf, "| %-15s| %-15s| %-15s\n", "subject code", "subject", "credit");
+    send_data(sock, buf);
+    while((row=mysql_fetch_row(sql_result))){
+        for(int i = 0; i < mysql_num_fields(sql_result); i++){
+            sprintf(buf, "| %-15s", row[i]);
+            send_data(sock, buf);
+        }
+        send_data(sock, "\n");
+    }
+    send_data(sock, "\n[*] 수강생을 조회할 과목 코드를 입력하세요.\n");
+    recv_data(sock, subject_code); // 과목코드 입력
+
+    // 학생 모두 출력
+    sprintf(buf,"select student_num, (select name from student where student_num=score.student_num) from score where subject_code=\"%s\";", subject_code);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+    if (!mysql_num_rows(sql_result)){
+        send_data(sock, "[-] 해당 과목이 존재하지 않습니다.\n");
+        return 0; // 쿼리 결과가 없으면 0 반환
+    }
+    send_data(sock, "[*] 수강생 목록\n");
+
+    sprintf(buf, "| %-15s| %-15s|\n", "number", "name");
+    send_data(sock, buf);
+    while((row=mysql_fetch_row(sql_result))){
+        for(int i = 0; i < mysql_num_fields(sql_result); i++){
+            sprintf(buf, "| %-15s", row[i]);
+            send_data(sock, buf);
+        }
+        send_data(sock, "\n");
+    }
+    //학생 성적 입력 부분
+    send_data(sock, "[*] 성적을 입력할 학생의 학번을 입력하세요.\n");
+    recv_data(sock, student_num);
+
+    //입력한 학번이 데이터 베이스 안에 존재하지 않을때 오류메시지 출력
+    sprintf(buf,"select * from score where student_num=\"%s\" and subject_code=\"%s\";", student_num, subject_code);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+    if ( mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        send_data(sock, "[*] 중간 : \n");
+        recv_data(sock, midterm);
+        send_data(sock, "[*] 기말 : \n");
+        recv_data(sock, final);
+        send_data(sock, "[*] 과제 : \n");
+        recv_data(sock, homework);
+        send_data(sock, "[*] 출석 : \n");
+        recv_data(sock, attendance);
+        send_data(sock, "\n");
+        sprintf(buf, "update score set midterm=%s, final=%s, homework=%s, attendance=%s where student_num=\"%s\";", 
+                    midterm, final, homework, attendance, student_num);
+        mysql_query(conn, buf);
+        send_data(sock, "[*] 입력 완료\n");
+        return 1;
+    } else send_data(sock, "\n[-] 해당 학번이 존재하지 않습니다.\n");
+    
+   return 0;
+}
+
+
+
+int sendMessage(int sock, MYSQL *conn, char *from, int state){
+    char buf[250];
+    char msg[200];
+    char to[20];
+    MYSQL_RES *sql_result;
+    MYSQL_ROW row;
+
+    send_data(sock, "받는이의 학번 또는 교번을 입력하세요.\n");
+    recv_data(sock, to);
+
+    sprintf(buf,"select * from account where num=\"%s\";", to);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+    if (!mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        send_data(sock, "[-] 없는 사용자 입니다.\n");
+        return 0;    
+    }
+    send_data(sock, "[*] 보낼 내용을 입력하세요. (최대 200byte)\n");
+    recv_data(sock, msg);
+    
+    sprintf(buf, "insert into message values (\"%s\", \"%s\", \"%s\", now());", from, to, msg);
+    mysql_query(conn, buf);
+    send_data(sock, "[*] 전송 완료\n");
+    return 1;
+}
+
+int messageBox(int sock, MYSQL *conn, char *num, int state){
+    char buf[250];
+    MYSQL_RES *sql_result;
+    MYSQL_ROW row;
+
+    send_data(sock, "[*] 메시지함\n");
+    sprintf(buf,"select (select name from account where num=message.from), sendtime, content from message where message.to=\"%s\";", num);
+    mysql_query(conn, buf);
+    sql_result = mysql_store_result(conn);
+    if (!mysql_num_rows(sql_result) ){ // 쿼리 결과가 있을 경우
+        send_data(sock, "[-] 메시지가 없습니다.\n");
+        return 0;    
+    } 
+    
+    while((row=mysql_fetch_row(sql_result))){
+        sprintf(buf, "보낸이 : %s | ", row[0]);
+        send_data(sock, buf);
+        sprintf(buf, "보낸 날짜 : %s\n", row[1]);
+        send_data(sock, buf);
+        sprintf(buf, "%s\n", row[2]);
+        send_data(sock, buf);
+        send_data(sock, "\n");
+    }
+    return 1;
+}
 
 void debug(char *buf){
     char testbuf[0x200];
