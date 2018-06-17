@@ -1,5 +1,4 @@
 OPTION=-fsanitize=undefined -fsanitize=address
-
 default: server.o client.o
 
 server.o: server.c
