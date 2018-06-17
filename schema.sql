@@ -215,10 +215,17 @@ insert into professor values('20000102','ahs041','안혜선','computer engineeri
 insert into subject values('19800402','01','data structure',10,3);
 insert into subject values('19900512','02','iot',10,3);
 insert into subject values('19920623','03','java foundation',10,3);
+<<<<<<< HEAD
 insert into subject values('19890725','04','C language',10,3);
 insert into subject values('19870723','05','reading english',10,3);
 insert into subject values('20000102','06','general physics',10,3);
 insert into subject values('19990923','07','pbl',10,3);
+=======
+insert into subject values('19890725','04','introduction to computer',10,3);
+insert into subject values('19870723','05','reading english',10,3);
+insert into subject values('19990923','06','general physics',10,3);
+insert into subject values('20000102','07','pbl',10,3);
+>>>>>>> ecedc2f233de80f92a328b288cf61895661ad3b0
 
 
 insert into score values
