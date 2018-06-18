@@ -443,7 +443,7 @@ int insertAttendance(int sock, MYSQL *conn, char *num){
 }
 
 int insertScore(int sock, MYSQL *conn, char *num) {
-    char midterm[20], final[20], homework[20], attendance[20];
+    char midterm[20], final[20], homework[20], attendance[20], grade[10];
     char student_num[20];
     char subject_code[20];
     char buf[200];
@@ -506,9 +506,11 @@ int insertScore(int sock, MYSQL *conn, char *num) {
         recv_data(sock, homework);
         send_data(sock, "[*] 출석 : \n");
         recv_data(sock, attendance);
+        send_data(sock, "[*] 학점 : \n");
+        recv_data(sock, grade);
         send_data(sock, "\n");
-        sprintf(buf, "update score set midterm=%s, final=%s, homework=%s, attendance=%s where student_num=\"%s\" and subject_code=\"%s\";", 
-                    midterm, final, homework, attendance, student_num, subject_code);
+        sprintf(buf, "update score set midterm=%s, final=%s, homework=%s, attendance=%s, grade=\"%s\" where student_num=\"%s\" and subject_code=\"%s\";", 
+                    midterm, final, homework, attendance, grade, student_num, subject_code);
         mysql_query(conn, buf);
         send_data(sock, "[*] 입력 완료\n");
         return 1;
